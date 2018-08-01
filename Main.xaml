@@ -39,6 +39,7 @@
       <x:String>System.Net</x:String>
       <x:String>Newtonsoft.Json.Linq</x:String>
       <x:String>Newtonsoft.Json</x:String>
+      <x:String>System.Web</x:String>
     </sco:Collection>
   </TextExpression.NamespacesForImplementation>
   <TextExpression.ReferencesForImplementation>
@@ -63,9 +64,10 @@
       <AssemblyReference>System.Runtime.WindowsRuntime</AssemblyReference>
       <AssemblyReference>Newtonsoft.Json</AssemblyReference>
       <AssemblyReference>Microsoft.VisualStudio.Services.Common</AssemblyReference>
+      <AssemblyReference>System.Web</AssemblyReference>
     </sco:Collection>
   </TextExpression.ReferencesForImplementation>
-  <Flowchart sap2010:Annotation.AnnotationText="Asset に「 orchestrator_user 」というキーでアカウントをセットアップ(Credential)。(ロボット毎)&#xD;&#xA;その他&#xD;&#xA;「servername」 でURLを設定(例：  https://platform.uipath.com )&#xD;&#xA;「tenant_id」 にテナント名を設定&#xD;&#xA;Orchにはこれらの情報でログインする。&#xD;&#xA;&#xD;&#xA;Orchから本シナリオを Job経由で起動したとき「そのジョブをセットしたOrchのユーザ名」と「起動したロボに設定されたWindowsユーザアカウント」 がおなじかどうかをチェックして、OKならMessageBoxを出す。NGなら、エラーで終了する。" DisplayName="Main Flow" sap2010:WorkflowViewState.IdRef="Flowchart_1">
+  <Flowchart sap2010:Annotation.AnnotationText="Asset に「 orchestrator_user 」というキーでアカウントをセットアップ(Credential)。(ロボット毎)&#xA;その他&#xA;「servername」 でURLを設定(例：  https://platform.uipath.com )&#xA;「tenant_id」 にテナント名を設定&#xA;Orchにはこれらの情報でログインする。&#xA;&#xA;Orchから本シナリオを Job経由で起動したとき「そのジョブをセットしたOrchのユーザ名」と「起動したロボに設定されたWindowsユーザアカウント」 がおなじかどうかをチェックして、OKならMessageBoxを出す。NGなら、エラーで終了する。" DisplayName="Main Flow" sap2010:WorkflowViewState.IdRef="Flowchart_1">
     <Flowchart.StartNode>
       <FlowStep x:Name="__ReferenceID8" sap2010:WorkflowViewState.IdRef="FlowStep_14">
         <Flowchart DisplayName="権限チェック" sap2010:WorkflowViewState.IdRef="Flowchart_4">
@@ -115,7 +117,21 @@
                   </Sequence>
                 </Sequence>
                 <Sequence sap2010:Annotation.AnnotationText="サーバに認証に行き、トークンを取得して所定の変数にセットする。" DisplayName="Token設定" sap2010:WorkflowViewState.IdRef="Sequence_47">
-                  <ui:HttpClient ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" StatusCode="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" Body="[&quot;{&quot;&quot;UsernameOrEmailAddress&quot;&quot;:&quot;&quot;&quot; +  orch_user  + &quot;&quot;&quot;,&quot;&quot;tenancyName&quot;&quot;:&quot;&quot;&quot;+tenant_id+&quot;&quot;&quot;,&quot;&quot;Password&quot;&quot;:&quot;&quot;&quot;+  orch_password +&quot;&quot;&quot;}&quot;]" BodyFormat="application/json" DisplayName="HTTP Request" EndPoint="[servername+ &quot;/api/Account/Authenticate&quot;]" sap2010:WorkflowViewState.IdRef="HttpClient_7" Method="POST" Result="[authResult]" TimeoutMS="20000">
+                  <Sequence.Variables>
+                    <Variable x:TypeArguments="x:String" Name="jsonStr" />
+                    <Variable x:TypeArguments="njl:JObject" Name="json" />
+                  </Sequence.Variables>
+                  <Assign sap2010:WorkflowViewState.IdRef="Assign_44">
+                    <Assign.To>
+                      <OutArgument x:TypeArguments="x:String">[jsonStr]</OutArgument>
+                    </Assign.To>
+                    <Assign.Value>
+                      <InArgument x:TypeArguments="x:String" xml:space="preserve">["{""UsernameOrEmailAddress"":""" + orch_user   + """,""tenancyName"":"""+tenant_id+""",""Password"":"""+  orch_password +"""}"]</InArgument>
+                    </Assign.Value>
+                  </Assign>
+                  <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize json" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_14" JsonObject="[json]" JsonString="[jsonStr]" />
+                  <ui:LogMessage DisplayName="Log message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Trace" Message="[json.ToString]" />
+                  <ui:HttpClient ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" StatusCode="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" Body="[json.ToString]" BodyFormat="application/json" DisplayName="HTTP Request" EndPoint="[servername+ &quot;/api/Account/Authenticate&quot;]" sap2010:WorkflowViewState.IdRef="HttpClient_7" Method="POST" Result="[authResult]" TimeoutMS="20000">
                     <ui:HttpClient.Attachments>
                       <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
                     </ui:HttpClient.Attachments>
@@ -132,7 +148,7 @@
                   <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize json" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_9" JsonObject="[authResultObj]" JsonString="[authResult]" />
                   <If Condition="[authResultObj(&quot;result&quot;) is Nothing]" sap2010:WorkflowViewState.IdRef="If_10">
                     <If.Then>
-                      <Throw Exception="[new Exception(&quot;認証エラーです&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
+                      <Throw Exception="[new Exception(&quot;Orchestratorへのログイン認証エラーです&quot;)]" sap2010:WorkflowViewState.IdRef="Throw_2" />
                     </If.Then>
                     <If.Else>
                       <Assign sap2010:WorkflowViewState.IdRef="Assign_29">
@@ -234,7 +250,7 @@
                     <Flowchart DisplayName="PC上のロボに該当するロボ情報の取得" sap2010:WorkflowViewState.IdRef="Flowchart_6">
                       <Flowchart.StartNode>
                         <FlowStep x:Name="__ReferenceID1" sap2010:WorkflowViewState.IdRef="FlowStep_16">
-                          <Sequence sap2010:Annotation.AnnotationText="PC上のロボに該当するロボ情報の取得。マシン名だけだと特定できないので、&#xD;&#xA;マシン名と、Windowsアカウントをチェックしている。&#xD;&#xA;&#xD;&#xA;Orch上に設定したWindowsアカウントは、「ドメイン名\アカウント名」となっているが、&#xD;&#xA;Windowsから取得できるアカウントはドメイン名とアカウント名が分かれているので、連結してチェックなどをしている。" DisplayName="PC上のロボに該当するロボ情報の取得" sap2010:WorkflowViewState.IdRef="Sequence_57">
+                          <Sequence sap2010:Annotation.AnnotationText="PC上のロボに該当するロボ情報の取得。マシン名だけだと特定できないので、&#xA;マシン名と、Windowsアカウントをチェックしている。&#xA;&#xA;Orch上に設定したWindowsアカウントは、「ドメイン名\アカウント名」となっているが、&#xA;Windowsから取得できるアカウントはドメイン名とアカウント名が分かれているので、連結してチェックなどをしている。" DisplayName="PC上のロボに該当するロボ情報の取得" sap2010:WorkflowViewState.IdRef="Sequence_57">
                             <Sequence.Variables>
                               <Variable x:TypeArguments="njl:JArray" Name="robos" />
                               <Variable x:TypeArguments="x:String" Name="pcUserName" />
@@ -514,7 +530,7 @@
     </Flowchart.StartNode>
     <x:Reference>__ReferenceID8</x:Reference>
     <x:Reference>__ReferenceID9</x:Reference>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>dyRaOlxnaXRcT3JjaGVzdHJhdG9yQVBJVGVzdFxNYWluLnhhbWzIAUYDlgQPAgEBSQmLBBUCAQSOBA2OBMMBAgECTzpPQwIBBVYPpQEaAwHWAagBE9MCHgIBX9YCF+UDIgIBFOgDG/MDJgIBCvUDTfUDWAIBCPgDI/gDmwICAQaOBKMBjgSxAQIBA10RdhwDAfYBdxGkARwDAdcBqQEV+QEhAwGkAfoBFdICIQIBYNoCGe8CJAIBTvACGeQDJgIBFekDHekD2gECARHqAx3qA8ICAgEP6wMd8gMmAgEL+AOUAfgDmAICAQdeE3UeAwH3AXwTgwEcAwHyAYQBE4QByAEDAe0BhQEThQGWAQMB6wGGAROTASMDAeUBlAETlAHTAQMB4AGVAROjARgDAdgBrAEb9QEmAwGlAf0BG84CJgIBYd8CG+wCKwIBWO0CG+0C3QECAVPuAhvuAuQBAgFP8AKQAfACnQECAU32Ah/hAyoCARbpA1npA2ECARPpA7EB6QPIAQIBEuoDswHqA7ACAgEQ8ANJ8AOBAQIBDu0DSu0DUwIBDGIVYusBAwGFAmMVah4DAYACaxVvKAMB/AFwFXQoAwH4AX4/fkgDAfMBhAG6AYQBxQEDAfABhAGmAYQBrgEDAe4BhQGCAYUBkwEDAewBhgGPBIYBlgQDAeoBhgGoAoYBuQIDAekBhgH2A4YBhAQDAecBhgH8AoYBsQMDAeYBlAHCAZQB0AEDAeMBlAGlAZQBtgEDAeEBlQEhlQFRAwHZAZcBF5cBjQEDAd4BmgEXoQEgAwHaAbEBHcYBKAMBxQHHAR3OASYDAcEBzwEd1gEmAwG+AdcBHecBKgMBsAHoAR30ASoDAaYBhAIdhALVAQMBoAGFAh2FAs0BAwGcAYYCHYYC0wEDAZgBhwIdhwLnAQMBkwGIAh2dAigDAYIBngIdzQIqAgFi3wKJBN8CkAQCAV7kAlzkAm8CAVzfAu4D3wL+AwIBWt8C/QLfAqkDAgFZ7QLKAe0C2gECAVbtAq4B7QK+AQIBVO4CnAHuAqkBAgFR7gK1Ae4C4QECAVD9AiGEAyoCAUmFAyGMAyoCAUWNAyGUAyoCAUGVAyHgAyYCARdiS2JeAwGKAmLbAWLoAQMBiAJivAFi0QEDAYYCaEBojAEDAYMCZUFlUAMBgQJtSG1UAwH+AWtGa1IDAf0BckhyUwMB+gFwRnBRAwH5AZcBKJcBYAMB3wGfAUKfAWQDAd0BnAFDnAFKAwHbAbYBH8MBLwMBzwHEAR/EAdcBAwHKAcUBH8UB3gEDAcYBzAFZzAFuAwHEAckBWskBbAMBwgHUAVzUAXIDAcAB0QFd0QFtAwG/AdcBlAHXAZwBAwG9AdwBIeUBLAMBsQHoAZEB6AGjAQMBrwHuASPxAS4DAacBhAKjAYQCswEDAaMBhALCAYQC0gEDAaEBhQKjAYUCrQEDAZ8BhQK8AYUCygEDAZ0BhgKjAYYCsAEDAZsBhgK/AYYC0AEDAZkBhwKLAYcC5AEDAZQBjQIfmgIvAwGMAZsCH5sC2QEDAYcBnAIfnALgAQMBgwGeApQBngKdAQMBgQGkAiPKAi4CAWOCA0yCA2wCAUz/Ak3/AlgCAUqKA0yKA20CAUiHA02HA1kCAUaSA1OSA3ICAUSPA1SPA14CAUKVAy+VA4MBAgEYlwMl3gMwAgEbtgGCBLYBiQQDAdUBuwFguwFzAwHTAbYB7AO2AfcDAwHRAbYBgQO2AagDAwHQAcQByQHEAdQBAwHNAcQBsgHEAb0BAwHLAcUBoAHFAagBAwHIAcUBtAHFAdsBAwHHAd0BI+QBKAMBsgHvASXvAaYBAwGsAfABJfAB3QEDAagBjQKFBI0CjAQDAZIBkgJgkgJzAwGQAY0C7gONAvoDAwGOAY0CgQONAqoDAwGNAZsCygGbAtYBAwGKAZsCsgGbAr4BAwGIAZwCoAGcAqkBAwGFAZwCtQGcAt0BAwGEAakCJbACLgIBfbECJbgCLgIBebkCJbkCyQECAXa6AiW6AsMBAgFzuwIluwLSAQIBcbwCJckCKgIBZJsDJ6IDMAIBPKMDJ6MD3QECATikAyfdAzQCARzdAWrdAZ8BAwGzAd8BJ+IBMgMBtAHvAZMB7wGjAQMBrQHwAWHwAWsDAasB8AG7AfABywEDAakBrgJQrgJuAwGAAasCUasCYgIBfrYCULYCawIBfLMCUbMCXwIBerkClAG5AsYBAgF3ugKUAboCwAECAXS7ApQBuwLPAQIBcrwCM7wCxwECAWW+AinHAjQCAWugA1SgA2oCAT+dA1WdA2MCAT2jA6kBowO1AQIBOqMDwQGjA9oBAgE5pAOeAaQDqgECATeqAy3aAzgCAR3gASngAfkBAwG5AeEBKeEB5wEDAbUBvwIrxgI0AgFssgMvuQM4AgEzugMvwQM4AgEvwgMvwgPwAQIBK8MDL8oDOAIBJ8sDL9kDNAIBHuABYOABdAMBuwHgAdYB4AH2AQMBugHhAWPhAXUDAbgB4QHdAeEB5AEDAbYBxAJZxAJfAgFvwQJawQJmAgFttwNatwN3AgE2tANbtANlAgE0vwNhvwOAAQIBMrwDYrwDcQIBMMID3AHCA+0BAgEuwgPCAcID0AECASzIA2HIA4cBAgEqxQNixQNtAgEoywM9ywOgAQIBH80DM9cDPgIBIM4DNc4DswICASXPAzXWAz4CASHOA8sBzgOhAgIBJtQDYNQDagIBJNEDYdEDcQIBIg==</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -538,6 +554,9 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
+      <sap2010:ViewStateData Id="Assign_44" sap:VirtualizedContainerService.HintSize="467,60" />
+      <sap2010:ViewStateData Id="DeserializeJson`1_14" sap:VirtualizedContainerService.HintSize="467,60" />
+      <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="467,91" />
       <sap2010:ViewStateData Id="HttpClient_7" sap:VirtualizedContainerService.HintSize="467,22" />
       <sap2010:ViewStateData Id="DeserializeJson`1_9" sap:VirtualizedContainerService.HintSize="467,60">
         <sap:WorkflowViewStateService.ViewState>
@@ -557,7 +576,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_47" sap:VirtualizedContainerService.HintSize="489,521">
+      <sap2010:ViewStateData Id="Sequence_47" sap:VirtualizedContainerService.HintSize="489,852">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -566,7 +585,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="200,138">
+      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="511,1567">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -871,7 +890,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Flowchart_4" sap:VirtualizedContainerService.HintSize="200,51">
+      <sap2010:ViewStateData Id="Flowchart_4" sap:VirtualizedContainerService.HintSize="644,717">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
