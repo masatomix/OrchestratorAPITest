@@ -4,6 +4,7 @@
  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
  xmlns:mva="clr-namespace:Microsoft.VisualBasic.Activities;assembly=System.Activities"
  xmlns:njl="clr-namespace:Newtonsoft.Json.Linq;assembly=Newtonsoft.Json"
+ xmlns:p="http://schemas.microsoft.com/workflow/2012/07/xaml/activities"
  xmlns:sads="http://schemas.microsoft.com/netfx/2010/xaml/activities/debugger"
  xmlns:sap="http://schemas.microsoft.com/netfx/2009/xaml/activities/presentation"
  xmlns:sap2010="http://schemas.microsoft.com/netfx/2010/xaml/activities/presentation"
@@ -80,6 +81,7 @@
             <Variable x:TypeArguments="scg:ICollection(x:String)" Name="runningJobIdList" />
             <Variable x:TypeArguments="x:String" Name="resultUserName" />
             <Variable x:TypeArguments="x:Boolean" Name="ok_flag" />
+            <Variable x:TypeArguments="x:String" Default="1" Name="ou_id" />
           </Flowchart.Variables>
           <Flowchart.StartNode>
             <FlowStep x:Name="__ReferenceID5" sap2010:WorkflowViewState.IdRef="FlowStep_20">
@@ -121,16 +123,28 @@
                     <Variable x:TypeArguments="x:String" Name="jsonStr" />
                     <Variable x:TypeArguments="njl:JObject" Name="json" />
                   </Sequence.Variables>
-                  <Assign sap2010:WorkflowViewState.IdRef="Assign_44">
-                    <Assign.To>
-                      <OutArgument x:TypeArguments="x:String">[jsonStr]</OutArgument>
-                    </Assign.To>
-                    <Assign.Value>
-                      <InArgument x:TypeArguments="x:String" xml:space="preserve">["{""UsernameOrEmailAddress"":""" + orch_user   + """,""tenancyName"":"""+tenant_id+""",""Password"":"""+  orch_password +"""}"]</InArgument>
-                    </Assign.Value>
-                  </Assign>
-                  <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize json" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_14" JsonObject="[json]" JsonString="[jsonStr]" />
-                  <ui:LogMessage DisplayName="Log message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Trace" Message="[json.ToString]" />
+                  <Sequence DisplayName="create Body json" sap2010:WorkflowViewState.IdRef="Sequence_65">
+                    <Sequence.Variables>
+                      <Variable x:TypeArguments="scg:IDictionary(x:String, x:String)" Name="jsonDic" />
+                    </Sequence.Variables>
+                    <p:BuildDictionary x:TypeArguments="x:String, x:String" DisplayName="Build dictionary" sap2010:WorkflowViewState.IdRef="BuildDictionary`2_1" Result="[jsonDic]">
+                      <p:BuildDictionary.Values>
+                        <InArgument x:TypeArguments="x:String" x:Key="tenancyName">[tenant_id]</InArgument>
+                        <InArgument x:TypeArguments="x:String" x:Key="UsernameOrEmailAddress">[orch_user]</InArgument>
+                        <InArgument x:TypeArguments="x:String" x:Key="Password">[orch_password]</InArgument>
+                      </p:BuildDictionary.Values>
+                    </p:BuildDictionary>
+                    <Assign sap2010:WorkflowViewState.IdRef="Assign_44">
+                      <Assign.To>
+                        <OutArgument x:TypeArguments="x:String">[jsonStr]</OutArgument>
+                      </Assign.To>
+                      <Assign.Value>
+                        <InArgument x:TypeArguments="x:String">[Newtonsoft.Json.JsonConvert.SerializeObject(jsonDic)]</InArgument>
+                      </Assign.Value>
+                    </Assign>
+                    <ui:DeserializeJson x:TypeArguments="njl:JObject" DisplayName="Deserialize json" sap2010:WorkflowViewState.IdRef="DeserializeJson`1_14" JsonObject="[json]" JsonString="[jsonStr]" />
+                    <ui:LogMessage DisplayName="Log message" sap2010:WorkflowViewState.IdRef="LogMessage_13" Level="Trace" Message="[json.ToString]" />
+                  </Sequence>
                   <ui:HttpClient ConsumerKey="{x:Null}" ConsumerSecret="{x:Null}" ContinueOnError="{x:Null}" OAuth1Token="{x:Null}" OAuth1TokenSecret="{x:Null}" OAuth2Token="{x:Null}" Password="{x:Null}" ResourcePath="{x:Null}" StatusCode="{x:Null}" Username="{x:Null}" AcceptFormat="JSON" Body="[json.ToString]" BodyFormat="application/json" DisplayName="HTTP Request" EndPoint="[servername+ &quot;/api/Account/Authenticate&quot;]" sap2010:WorkflowViewState.IdRef="HttpClient_7" Method="POST" Result="[authResult]" TimeoutMS="20000">
                     <ui:HttpClient.Attachments>
                       <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
@@ -185,6 +199,7 @@
                                 </ui:HttpClient.Attachments>
                                 <ui:HttpClient.Headers>
                                   <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer " + token]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="X-UIPATH-OrganizationUnitId">[ou_id]</InArgument>
                                 </ui:HttpClient.Headers>
                                 <ui:HttpClient.Parameters>
                                   <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
@@ -272,6 +287,7 @@
                                 </ui:HttpClient.Attachments>
                                 <ui:HttpClient.Headers>
                                   <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer " + token]</InArgument>
+                                  <InArgument x:TypeArguments="x:String" x:Key="X-UIPATH-OrganizationUnitId">[ou_id]</InArgument>
                                 </ui:HttpClient.Headers>
                                 <ui:HttpClient.Parameters>
                                   <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
@@ -354,6 +370,7 @@
                             </ui:HttpClient.Attachments>
                             <ui:HttpClient.Headers>
                               <InArgument x:TypeArguments="x:String" x:Key="Authorization">["Bearer " + token]</InArgument>
+                              <InArgument x:TypeArguments="x:String" x:Key="X-UIPATH-OrganizationUnitId">[ou_id]</InArgument>
                             </ui:HttpClient.Headers>
                             <ui:HttpClient.Parameters>
                               <scg:Dictionary x:TypeArguments="x:String, InArgument(x:String)" />
@@ -530,7 +547,7 @@
     </Flowchart.StartNode>
     <x:Reference>__ReferenceID8</x:Reference>
     <x:Reference>__ReferenceID9</x:Reference>
-    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
+    <sads:DebugSymbol.Symbol>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</sads:DebugSymbol.Symbol>
   </Flowchart>
   <sap2010:WorkflowViewState.ViewStateManager>
     <sap2010:ViewStateManager>
@@ -554,9 +571,18 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Assign_44" sap:VirtualizedContainerService.HintSize="467,60" />
-      <sap2010:ViewStateData Id="DeserializeJson`1_14" sap:VirtualizedContainerService.HintSize="467,60" />
-      <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="467,91" />
+      <sap2010:ViewStateData Id="BuildDictionary`2_1" sap:VirtualizedContainerService.HintSize="314,22" />
+      <sap2010:ViewStateData Id="Assign_44" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="DeserializeJson`1_14" sap:VirtualizedContainerService.HintSize="314,60" />
+      <sap2010:ViewStateData Id="LogMessage_13" sap:VirtualizedContainerService.HintSize="314,91" />
+      <sap2010:ViewStateData Id="Sequence_65" sap:VirtualizedContainerService.HintSize="467,51">
+        <sap:WorkflowViewStateService.ViewState>
+          <scg:Dictionary x:TypeArguments="x:String, x:Object">
+            <x:Boolean x:Key="IsExpanded">False</x:Boolean>
+            <x:Boolean x:Key="IsPinned">False</x:Boolean>
+          </scg:Dictionary>
+        </sap:WorkflowViewStateService.ViewState>
+      </sap2010:ViewStateData>
       <sap2010:ViewStateData Id="HttpClient_7" sap:VirtualizedContainerService.HintSize="467,22" />
       <sap2010:ViewStateData Id="DeserializeJson`1_9" sap:VirtualizedContainerService.HintSize="467,60">
         <sap:WorkflowViewStateService.ViewState>
@@ -576,7 +602,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_47" sap:VirtualizedContainerService.HintSize="489,852">
+      <sap2010:ViewStateData Id="Sequence_47" sap:VirtualizedContainerService.HintSize="489,612">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -585,7 +611,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="511,1567">
+      <sap2010:ViewStateData Id="Sequence_48" sap:VirtualizedContainerService.HintSize="511,1327">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">False</x:Boolean>
@@ -647,7 +673,7 @@
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
-      <sap2010:ViewStateData Id="Sequence_53" sap:VirtualizedContainerService.HintSize="200,78">
+      <sap2010:ViewStateData Id="Sequence_53" sap:VirtualizedContainerService.HintSize="538,1880">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
             <x:Boolean x:Key="IsExpanded">True</x:Boolean>
@@ -721,7 +747,7 @@
       <sap2010:ViewStateData Id="FlowStep_16">
         <sap:WorkflowViewStateService.ViewState>
           <scg:Dictionary x:TypeArguments="x:String, x:Object">
-            <av:Point x:Key="ShapeLocation">200,154</av:Point>
+            <av:Point x:Key="ShapeLocation">220,141</av:Point>
             <av:Size x:Key="ShapeSize">200,258</av:Size>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
@@ -733,7 +759,7 @@
             <x:Boolean x:Key="IsPinned">False</x:Boolean>
             <av:Point x:Key="ShapeLocation">270,2.5</av:Point>
             <av:Size x:Key="ShapeSize">60,75</av:Size>
-            <av:PointCollection x:Key="ConnectorLocation">300,77.5 300,154</av:PointCollection>
+            <av:PointCollection x:Key="ConnectorLocation">300,77.5 300,107.5 320,107.5 320,141</av:PointCollection>
           </scg:Dictionary>
         </sap:WorkflowViewStateService.ViewState>
       </sap2010:ViewStateData>
